@@ -1,0 +1,16 @@
+﻿TODO:
+	- multiclient
+	- add AntiCheat(all files check + screenshot + own jre + client and launcher protection)
+	- own site registration support
+	- add custom java parameters
+	- add minecrafts(java appications) statuses + kill
+	- add moduled translations, custom sites to visit
+	- add custom window(mahapps.metro) with help button, change all buttons to square, add progress bar, go do dropbox button
+	- another update notification (dialog in window?) + show what updated in newer version
+	- minecraft logs handling
+	- add roslyn linq rewrite
+	- delete or not delete natives after exit + reextract natives or not
+	- redownload or not if hash the same (fast download)
+	- main directory updated event + mainFolderWatcher update
+
+	faster SetInterfaceAll
