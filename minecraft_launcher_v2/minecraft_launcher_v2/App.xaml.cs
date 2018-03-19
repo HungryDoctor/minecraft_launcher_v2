@@ -25,8 +25,19 @@ namespace minecraft_launcher_v2
             Current.DispatcherUnhandledException += App_DispatcherUnhandledException;
             Dispatcher.UnhandledException += App_DispatcherUnhandledException;
 
-            //CultureInfo.DefaultThreadCurrentCulture = Constants.CULTURE_DEFAULT;
-            //CultureInfo.DefaultThreadCurrentUICulture = Constants.CULTURE_DEFAULT;
+            if (!Directory.Exists(Constants.PATH_GLOBAL_SETTINGS))
+            {
+                Directory.CreateDirectory(Constants.PATH_GLOBAL_SETTINGS);
+            }
+
+#if NET_46
+            ProfileOptimization.SetProfileRoot(Constants.PATH_GLOBAL_SETTINGS);
+            ProfileOptimization.StartProfile("Launcher.Profile");
+#endif
+
+#if NET_451
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+#endif
 
 #if !DEBUG
             if (!CommonUtils.IsOneAppInstance())
@@ -36,6 +47,9 @@ namespace minecraft_launcher_v2
             }
 #endif
 
+            //CultureInfo.DefaultThreadCurrentCulture = Constants.CULTURE_DEFAULT;
+            //CultureInfo.DefaultThreadCurrentUICulture = Constants.CULTURE_DEFAULT;
+
             try
             {
                 Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
@@ -44,24 +58,20 @@ namespace minecraft_launcher_v2
             {
             }
 
-            if (!Directory.Exists(Constants.PATH_SETTINGS_GLOBAL))
-            {
-                Directory.CreateDirectory(Constants.PATH_SETTINGS_GLOBAL);
-            }
-            ProfileOptimization.SetProfileRoot(Constants.PATH_SETTINGS_GLOBAL);
-            ProfileOptimization.StartProfile("Launcher.Profile");
-
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
             Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
 
-            ServicePointManager.DefaultConnectionLimit = CommonUtils.GetLogicalCoresCount() * 3;
+            ServicePointManager.DefaultConnectionLimit = Environment.ProcessorCount * 3;
 
             CosturaUtility.Initialize();
+
+            ExtractResources();
 
             new ModelMain();
         }
 
 
+
+        #region Exception Handling
 
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
@@ -215,6 +225,21 @@ namespace minecraft_launcher_v2
             }
 
             return sb.ToString();
+        }
+
+        #endregion
+
+
+        private void ExtractResources()
+        {
+            string imagePath = Constants.PATH_GLOBAL_SETTINGS + "\\" + Constants.FILENAME_ICON_MINECRAFT;
+            CommonUtils.WriteResourceToFile(Constants.FILENAME_ICON_MINECRAFT, imagePath);
+
+            imagePath = Constants.PATH_GLOBAL_SETTINGS + "\\" + Constants.FILENAME_ICON_DROPBOX;
+            CommonUtils.WriteResourceToFile(Constants.FILENAME_ICON_DROPBOX, imagePath);
+
+            imagePath = Constants.PATH_GLOBAL_SETTINGS + "\\" + Constants.FILENAME_ICON_JAVA;
+            CommonUtils.WriteResourceToFile(Constants.FILENAME_ICON_JAVA, imagePath);
         }
 
     }

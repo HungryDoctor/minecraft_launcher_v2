@@ -2,19 +2,15 @@
 using minecraft_launcher_v2.ConstantValues;
 using minecraft_launcher_v2.CustomStructs;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Management;
 using System.Net;
 using System.Reflection;
-using System.Resources;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows.Media.Imaging;
 
 namespace minecraft_launcher_v2.Utilities
 {
@@ -158,6 +154,17 @@ namespace minecraft_launcher_v2.Utilities
             return result;
         }
 
+        public static void WriteResourceToFile(string resourceName, string fileName)
+        {
+            using (Stream resource =  Assembly.GetExecutingAssembly().GetManifestResourceStream("minecraft_launcher_v2.Resources." + resourceName))
+            {
+                using (Stream output = File.OpenWrite(fileName))
+                {
+                    resource.CopyTo(output);
+                }
+            }
+        }
+
         public static void ExtractZip(string zipPath, string extractionFoler, bool overwrite)
         {
             using (ZipFile zip = ZipFile.Read(zipPath))
@@ -176,25 +183,9 @@ namespace minecraft_launcher_v2.Utilities
             }
         }
 
-
-        public static int GetLogicalCoresCount()
-        {
-            return Environment.ProcessorCount;
-        }
-
-        public static ulong GetTotalMemoryInBytes()
-        {
-            return Singlet.ComputerInfo.TotalPhysicalMemory;
-        }
-
         public static ulong GetFreeRam()
         {
             return Singlet.ComputerInfo.AvailablePhysicalMemory;
-        }
-
-        public static OperatingSystem GetOSVersion()
-        {
-            return Environment.OSVersion;
         }
 
         public static MachineType GetDLLMachineType(string filePath)
@@ -268,90 +259,6 @@ namespace minecraft_launcher_v2.Utilities
             }
 
             return true;
-        }
-
-
-        public static void ExtractResource(string resourceName, string fileName)
-        {
-            var icons = new Dictionary<String, string>();
-            var asm = Assembly.GetExecutingAssembly();
-            Stream resourceStream = asm.GetManifestResourceStream(asm.GetName().Name + ".g.resources");
-            using (ResourceReader resourceReader = new ResourceReader(resourceStream))
-            {
-                foreach (DictionaryEntry resourceEntry in resourceReader)
-                {
-                    if (resourceEntry.Key.ToString().ToUpper() == resourceName.ToUpper())
-                    {
-                        using (var fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
-                        {
-                            ((UnmanagedMemoryStream)resourceEntry.Value).CopyTo(fileStream);
-                        }
-                    }
-                }
-            }
-        }
-
-
-        public static Icon ConvertPngToIco(Image img, int size = 16)
-        {
-            byte[] pngiconheader = new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-            Icon result;
-
-            using (Bitmap bmp = new Bitmap(img, new Size(size, size)))
-            {
-                byte[] png;
-                using (MemoryStream fs = new MemoryStream())
-                {
-                    bmp.Save(fs, System.Drawing.Imaging.ImageFormat.Png);
-                    fs.Position = 0;
-                    png = fs.ToArray();
-                }
-
-                using (MemoryStream fs = new MemoryStream())
-                {
-                    if (size >= 256)
-                    {
-                        size = 0;
-                    }
-
-                    pngiconheader[6] = (byte)size;
-                    pngiconheader[7] = (byte)size;
-                    pngiconheader[14] = (byte)(png.Length & 255);
-                    pngiconheader[15] = (byte)(png.Length / 256);
-                    pngiconheader[18] = (byte)(pngiconheader.Length);
-
-                    fs.Write(pngiconheader, 0, pngiconheader.Length);
-                    fs.Write(png, 0, png.Length);
-                    fs.Position = 0;
-
-                    result = new Icon(fs);
-                }
-            }
-
-            return result;
-        }
-
-        public static Bitmap ConvertIcoToPng(Icon ico)
-        {
-            BitmapEncoder encoder = new PngBitmapEncoder();
-            Bitmap bitmap;
-
-            using (MemoryStream icoStream = new MemoryStream())
-            {
-                ico.Save(icoStream);
-
-                BitmapFrame frame = new IconBitmapDecoder(icoStream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None).Frames.OrderBy(x => x.Height).Last();
-                encoder.Frames.Add(frame);
-
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    encoder.Save(stream);
-
-                    bitmap = new Bitmap(stream);
-                }
-            }
-
-            return bitmap;
         }
 
     }

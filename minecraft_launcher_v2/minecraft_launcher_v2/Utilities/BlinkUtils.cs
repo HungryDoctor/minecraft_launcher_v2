@@ -30,9 +30,9 @@ namespace minecraft_launcher_v2.Utilities
 
 
 
-        public static bool Flash(IntPtr handle, uint count)
+        public static bool Flash(IntPtr handle)
         {
-            FLASHWINFO fi = Create_FLASHWINFO(handle, FLASHW_ALL, count, 0);
+            FLASHWINFO fi = Create_FLASHWINFO(handle, FLASHW_ALL | FLASHW_TIMERNOFG, uint.MaxValue, 0);
             return FlashWindowEx(ref fi);
         }
 

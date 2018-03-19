@@ -78,12 +78,12 @@ namespace minecraft_launcher_v2.Utilities
 
         public static bool JavaExists(string versionPath)
         {
-            return File.Exists(versionPath + "\\bin\\java.exe") && File.Exists(versionPath + "\\bin\\javaw.exe");
+            return File.Exists(versionPath + Constants.PATH_FILE_JAVA_R) && File.Exists(versionPath + Constants.PATH_FILE_JAVAW_R);
         }
 
         public static BitDepth CheckJavaBitDebth(string javaPath)
         {
-            if (!File.Exists(javaPath + "\\bin\\java.exe") || !File.Exists(javaPath + "\\bin\\javaw.exe"))
+            if (!File.Exists(javaPath + Constants.PATH_FILE_JAVA_R) || !File.Exists(javaPath + Constants.PATH_FILE_JAVAW_R))
             {
                 return BitDepth.Unknown;
             }
@@ -91,8 +91,7 @@ namespace minecraft_launcher_v2.Utilities
             BitDepth javaBitDebth = BitDepth.Unknown;
             BitDepth javawBitDebth = BitDepth.Unknown;
 
-
-            switch (CommonUtils.GetDLLMachineType(javaPath + "\\bin\\java.exe"))
+            switch (CommonUtils.GetDLLMachineType(javaPath + Constants.PATH_FILE_JAVA_R))
             {
                 case MachineType.IMAGE_FILE_MACHINE_AMD64:
                 case MachineType.IMAGE_FILE_MACHINE_IA64:
@@ -112,7 +111,7 @@ namespace minecraft_launcher_v2.Utilities
                     }
             }
 
-            switch (CommonUtils.GetDLLMachineType(javaPath + "\\bin\\javaw.exe"))
+            switch (CommonUtils.GetDLLMachineType(javaPath + Constants.PATH_FILE_JAVAW_R))
             {
                 case MachineType.IMAGE_FILE_MACHINE_AMD64:
                 case MachineType.IMAGE_FILE_MACHINE_IA64:
@@ -132,13 +131,9 @@ namespace minecraft_launcher_v2.Utilities
                     }
             }
 
-            if (((int)javaBitDebth + (int)javawBitDebth) == 4)
+            if (javaBitDebth == javawBitDebth)
             {
-                return BitDepth.x64;
-            }
-            else if (((int)javaBitDebth + (int)javawBitDebth) == 3)
-            {
-                return BitDepth.x32;
+                return javaBitDebth;
             }
             else
             {

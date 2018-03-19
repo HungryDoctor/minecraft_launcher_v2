@@ -71,7 +71,7 @@
         public const string REQUEST_SET_JAVA_PATH = "Please, set Java directory\n";
 
 
-        public const string NOTIFICATION_CONTENT = "New versions of hungry launcher was found";
+        public const string NOTIFICATION_CONTENT = "New version of minecraft launcher was found";
         public const string NOTIFICATION_ACTION_DOWNLOAD = "Go to download page";
         public const string NOTIFICATION_ACTION_LATER_F = "Remind in {0} days";
         public const string NOTIFICATION_UPDATE_AVAILABLE = "Update available";

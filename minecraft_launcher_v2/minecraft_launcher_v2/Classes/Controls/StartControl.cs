@@ -317,13 +317,15 @@ namespace minecraft_launcher_v2.Classes.Controls
 
             ParallelOptions parallelOptions = new ParallelOptions();
             parallelOptions.CancellationToken = cToken;
-            if (CommonUtils.GetLogicalCoresCount() == 1 || CommonUtils.GetLogicalCoresCount() == 2)
+
+            var coresCount = Environment.ProcessorCount;
+            if (coresCount == 1 || coresCount == 2)
             {
                 parallelOptions.MaxDegreeOfParallelism = 1;
             }
             else
             {
-                parallelOptions.MaxDegreeOfParallelism = 2;
+                parallelOptions.MaxDegreeOfParallelism = coresCount - 1;
             }
 
             Task downloadLibraries = Task.Factory.StartNew((new Action(() => DownloadFilesFromQueue(parallelOptions, queueLibraries))), cToken);

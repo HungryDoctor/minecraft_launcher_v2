@@ -266,11 +266,11 @@ namespace minecraft_launcher_v2.Classes.Controls
 
             public static void LoadGlobalSettings()
             {
-                string fullPath = Constants.PATH_SETTINGS_GLOBAL + "\\" + Constants.FILENAME_SETTINGS_GLOBAL;
+                string fullPath = Constants.PATH_GLOBAL_SETTINGS + "\\" + Constants.FILENAME_SETTINGS_GLOBAL;
 
-                if (!Directory.Exists(Constants.PATH_SETTINGS_GLOBAL))
+                if (!Directory.Exists(Constants.PATH_GLOBAL_SETTINGS))
                 {
-                    Directory.CreateDirectory(Constants.PATH_SETTINGS_GLOBAL);
+                    Directory.CreateDirectory(Constants.PATH_GLOBAL_SETTINGS);
 
                     ResetGlobalSettings();
                     SaveGlobalSettings();
@@ -303,11 +303,11 @@ namespace minecraft_launcher_v2.Classes.Controls
 
             public static void SaveGlobalSettings()
             {
-                string fullPath = Constants.PATH_SETTINGS_GLOBAL + "\\" + Constants.FILENAME_SETTINGS_GLOBAL;
+                string fullPath = Constants.PATH_GLOBAL_SETTINGS + "\\" + Constants.FILENAME_SETTINGS_GLOBAL;
 
-                if (!Directory.Exists(Constants.PATH_SETTINGS_GLOBAL))
+                if (!Directory.Exists(Constants.PATH_GLOBAL_SETTINGS))
                 {
-                    Directory.CreateDirectory(Constants.PATH_SETTINGS_GLOBAL);
+                    Directory.CreateDirectory(Constants.PATH_GLOBAL_SETTINGS);
                 }
 
                 try

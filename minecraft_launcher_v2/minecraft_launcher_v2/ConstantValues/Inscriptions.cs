@@ -42,5 +42,12 @@
         public const string CONTEXT_MENU_SELECT_ALL = "Select All";
         public const string CONTEXT_MENU_OPEN_WITH_EXPLORER = "Open with Explorer";
 
+        public const string TASKBAR_GROUP_WEBSITES = "Websites";
+        public const string TASKBAR_GROUP_FOLDERS = "Folders";
+        public const string TASKBAR_OFFICIAL_PAGE = "Official Minecraft Site";
+        public const string TASKBAR_UPDATE_PAGE = "Update page"; 
+        public const string TASKBAR_GLOBAL_SETTINGS = "Global Launcher settings";
+        public const string TASKBAR_MAIN_DIRECTORY = "Current Game folder";
+        public const string TASKBAR_JAVA_DIRECTORY = "Current Java folder";
     }
 }

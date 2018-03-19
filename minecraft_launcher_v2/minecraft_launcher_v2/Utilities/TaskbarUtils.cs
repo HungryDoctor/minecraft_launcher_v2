@@ -1,4 +1,5 @@
 ﻿using Microsoft.WindowsAPICodePack.Taskbar;
+using minecraft_launcher_v2.ConstantValues;
 using minecraft_launcher_v2.CustomStructs;
 using System;
 using System.Collections.Generic;
@@ -40,7 +41,7 @@ namespace minecraft_launcher_v2.Utilities
             List<JumpListCustomCategory> categoriesList = new List<JumpListCustomCategory>();
             JumpListCustomCategory jumpListCustomCategory;
 
-            if (jumpListItems.ContainsKey("Sites"))
+            if (jumpListItems.ContainsKey(Inscriptions.TASKBAR_GROUP_WEBSITES))
             {
 
             }
@@ -52,19 +53,22 @@ namespace minecraft_launcher_v2.Utilities
 
                 foreach (var subItem in item.Value)
                 {
-                    if (subItem.TaskbarTitle == "Official Minecraft Site" && subItem.SiteLink != @"https://www.minecraft.net/")
+                    if (subItem.TaskbarTitle == Inscriptions.TASKBAR_OFFICIAL_PAGE && subItem.SiteLink != Constants.URL_OFFICIAL_PAGE)
                     {
                         continue;
                     }
 
-                    JumpListLink jumpListLink = new JumpListLink(subItem.SiteLink, subItem.TaskbarTitle);
-
-                    if (File.Exists(subItem.IconPath))
+                    if (!string.IsNullOrWhiteSpace(subItem.SiteLink))
                     {
-                        jumpListLink.IconReference = new Microsoft.WindowsAPICodePack.Shell.IconReference(Path.Combine(subItem.IconPath), subItem.IconResourceId);
-                    }
+                        JumpListLink jumpListLink = new JumpListLink(subItem.SiteLink, subItem.TaskbarTitle);
 
-                    jumpListCustomCategory.AddJumpListItems(jumpListLink);
+                        if (File.Exists(subItem.IconPath))
+                        {
+                            jumpListLink.IconReference = new Microsoft.WindowsAPICodePack.Shell.IconReference(Path.Combine(subItem.IconPath), subItem.IconResourceId);
+                        }
+
+                        jumpListCustomCategory.AddJumpListItems(jumpListLink);
+                    }
                 }
 
                 categoriesList.Add(jumpListCustomCategory);

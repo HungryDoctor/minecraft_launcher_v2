@@ -481,7 +481,7 @@ namespace minecraft_launcher_v2.Classes.Controls
 
             ParallelOptions parallelOptions = new ParallelOptions();
             parallelOptions.CancellationToken = cToken;
-            parallelOptions.MaxDegreeOfParallelism = CommonUtils.GetLogicalCoresCount();
+            parallelOptions.MaxDegreeOfParallelism = Environment.ProcessorCount;
 
             GetTotalBytesToDownload(versionJsnon);
 

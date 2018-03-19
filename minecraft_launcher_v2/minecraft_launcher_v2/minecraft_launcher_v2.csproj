@@ -24,9 +24,10 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DefineConstants>DEBUG;;NET_451;NET_46</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -38,7 +39,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Resources\Image_Icon.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\MainIcon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <NoWin32Manifest>true</NoWin32Manifest>
@@ -79,9 +80,6 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
-    <Reference Include="Windows">
-      <HintPath>Resources\Assemblies\Windows.winmd</HintPath>
-    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -96,7 +94,6 @@
     <Compile Include="Classes\Controls\AuthenticationControl.cs" />
     <Compile Include="Classes\Controls\DownloadControl.cs" />
     <Compile Include="Classes\Controls\LauncherProfilesControl.cs" />
-    <Compile Include="Classes\Controls\NotificationControl.cs" />
     <Compile Include="Classes\Controls\SettingsControl.cs" />
     <Compile Include="Classes\Controls\StartControl.cs" />
     <Compile Include="Classes\Controls\VersionsControl.cs" />
@@ -178,8 +175,15 @@
     <Folder Include="CustomControls\" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\Image_Icon.ico" />
-    <Resource Include="Resources\Image_Main.jpg" />
+    <EmbeddedResource Include="Resources\MainIcon.ico" />
+    <EmbeddedResource Include="Resources\MainImage.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\JavaLogo.ico" />
+    <EmbeddedResource Include="Resources\MinecraftLogo.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\DropboxLogo.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
@@ -191,6 +195,7 @@
   </Target>
   <Import Project="..\packages\Costura.Fody.1.6.2\build\dotnet\Costura.Fody.targets" Condition="Exists('..\packages\Costura.Fody.1.6.2\build\dotnet\Costura.Fody.targets')" />
   <Import Project="..\packages\Fody.2.4.6\build\Fody.targets" Condition="Exists('..\packages\Fody.2.4.6\build\Fody.targets')" />
+  <Import Project="VersionsPreprocessor.prop" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

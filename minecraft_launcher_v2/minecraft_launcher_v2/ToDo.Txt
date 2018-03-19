@@ -12,5 +12,6 @@
 	- delete or not delete natives after exit + reextract natives or not
 	- redownload or not if hash the same (fast download)
 	- main directory updated event + mainFolderWatcher update
+	- multiple wallpapers
 
 	faster SetInterfaceAll
