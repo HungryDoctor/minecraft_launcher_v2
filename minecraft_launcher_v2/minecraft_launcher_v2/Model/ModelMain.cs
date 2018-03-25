@@ -226,22 +226,31 @@ namespace minecraft_launcher_v2.Model
 
         public Task<List<ManifestVersion>> ReloadAvailableVersionsAsync()
         {
-            return Task.Factory.StartNew(new Func<List<ManifestVersion>>(() => VersionsControl.ReloadAvailableVersions()));
+            var task = Task.Factory.StartNew(new Func<List<ManifestVersion>>(() => VersionsControl.ReloadAvailableVersions()));
+            task.Start();
+
+            return task;
         }
 
         public Task<List<ManifestVersion>> GetAvailableVersionsAsync()
         {
-            return Task.Factory.StartNew(new Func<List<ManifestVersion>>(() => VersionsControl.GetAvailableVersions()));
+            var task = Task.Factory.StartNew(new Func<List<ManifestVersion>>(() => VersionsControl.GetAvailableVersions()));
+            task.Start();
+
+            return task;
         }
 
         public Task<List<string>> UpdateInstalledVersionsAsync()
         {
-            return Task.Factory.StartNew(new Func<List<string>>(() =>
+            var task = Task.Factory.StartNew(new Func<List<string>>(() =>
             {
                 List<string> installedVersions = VersionsControl.GetInstalledVersions().OrderByAlphaNumeric(t => t).ToList();
                 SettingsControl.DeleteRestVerionsSettings(installedVersions);
                 return installedVersions;
             }));
+            task.Start();
+
+            return task;
         }
 
         #endregion
@@ -251,13 +260,13 @@ namespace minecraft_launcher_v2.Model
 
         public void WatchDownloadPercentage(IntPtr windowPointer, Task<bool> downloadTask)
         {
-            double percent = 0;
+            double percent = 0.0;
 
             while (!downloadTask.IsCanceled && !downloadTask.IsCompleted && !downloadTask.IsFaulted)
             {
                 percent = DownloadControl.GetInstance().PercentDownloaded;
 
-                if (percent < 1 && !downloadTask.IsCompleted)
+                if (percent < 1.0 && !downloadTask.IsCompleted)
                 {
                     TaskbarUtils.SetTaskbarItemProgress(windowPointer, TaskbarProgressBarState.Normal, percent);
                 }
@@ -271,7 +280,7 @@ namespace minecraft_launcher_v2.Model
 
         public Task<bool> DownloadVersionAsync(string downloadVersion, IntPtr windowPointer)
         {
-            Task<bool> downloadTask = new Task<bool>(new Func<bool>(() =>
+            var downloadTask = Task.Factory.StartNew(new Func<bool>(() =>
             {
                 if (!string.IsNullOrWhiteSpace(downloadVersion))
                 {
@@ -282,11 +291,10 @@ namespace minecraft_launcher_v2.Model
                     return false;
                 }
             }));
-
-            Task watchPercentageTask = new Task(new Action(() => WatchDownloadPercentage(windowPointer, downloadTask)));
-            watchPercentageTask.Start();
-
             downloadTask.Start();
+
+            var watchPercentageTask = Task.Factory.StartNew(new Action(() => WatchDownloadPercentage(windowPointer, downloadTask)));
+            watchPercentageTask.Start();
 
             return downloadTask;
         }
@@ -461,7 +469,7 @@ namespace minecraft_launcher_v2.Model
 
         public Task<Process> StartGameAsync()
         {
-            return Task.Factory.StartNew(new Func<Process>(() =>
+            var task =  Task.Factory.StartNew(new Func<Process>(() =>
             {
                 if (AreSettingsOk())
                 {
@@ -472,6 +480,9 @@ namespace minecraft_launcher_v2.Model
                     return null;
                 }
             }));
+            task.Start();
+
+            return task;
         }
 
         #endregion
@@ -531,7 +542,7 @@ namespace minecraft_launcher_v2.Model
 
         public Task SetTaskbarJumpListAsync(IntPtr windowPointer, Dictionary<string, List<TaskbarSiteItem>> additionalJumpListItems)
         {
-            return Task.Factory.StartNew(new Action(() =>
+            var task = Task.Factory.StartNew(new Action(() =>
             {
                 Dictionary<string, List<TaskbarSiteItem>> jumpListItems = new Dictionary<string, List<TaskbarSiteItem>>();
 
@@ -555,6 +566,9 @@ namespace minecraft_launcher_v2.Model
 
                 TaskbarUtils.SetTaskbarJumpListLink(windowPointer, jumpListItems);
             }));
+            task.Start();
+
+            return task;
         }
 
         #endregion
@@ -562,7 +576,10 @@ namespace minecraft_launcher_v2.Model
 
         public Task<string> CheckForUpdatesAsync()
         {
-            return Task.Factory.StartNew(new Func<string>(() => CommonUtils.GetLauncherUpdates()));
+            var task = Task.Factory.StartNew(new Func<string>(() => CommonUtils.GetLauncherUpdates()));
+            task.Start();
+
+            return task;
         }
 
         private void StopDownloads()

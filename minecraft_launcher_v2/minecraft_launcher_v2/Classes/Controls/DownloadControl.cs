@@ -282,9 +282,15 @@ namespace minecraft_launcher_v2.Classes.Controls
             StartDownloadFilesFromQueue(Environment.ProcessorCount);
 
             Task getAssetsUrls = Task.Factory.StartNew(new Action(() => GetAssetsUrls(versionJsnon)), cancellationTokenSource.Token);
+            getAssetsUrls.Start();
+
             Task getLibrariesUrls = Task.Factory.StartNew(new Action(() => GetLibrariesUrls(versionJsnon)), cancellationTokenSource.Token);
+            getLibrariesUrls.Start();
+
             Task getMainFilesUrls = Task.Factory.StartNew(new Action(() => GetMainFilesUrls(versionJsnon, versionManifest.url)), cancellationTokenSource.Token);
-            
+            getMainFilesUrls.Start();
+
+
             if (WaitTasks(new Task[] { getAssetsUrls, getLibrariesUrls, getMainFilesUrls }, -1))
             {
                 downloadQueue.Enqueue(null);

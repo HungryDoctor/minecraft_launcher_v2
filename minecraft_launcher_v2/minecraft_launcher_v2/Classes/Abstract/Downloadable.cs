@@ -48,7 +48,10 @@ namespace minecraft_launcher_v2.Classes.Abstract
             currentDownloadTasks = new Task[threadsCount];
             for (int x = 0; x < threadsCount; x++)
             {
-                currentDownloadTasks[x] = Task.Factory.StartNew(new Action(() => { DownloadFilesFromQueue(); }), cancellationTokenSource.Token);
+                var task = Task.Factory.StartNew(new Action(() => DownloadFilesFromQueue()), cancellationTokenSource.Token);
+                task.Start();
+
+                currentDownloadTasks[x] = task;
             }
         }
 
