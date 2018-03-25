@@ -1,4 +1,4 @@
-﻿using minecraft_launcher_v2.Classes.Controls;
+﻿using minecraft_launcher_v2.Classes.Controls.Static;
 using System;
 using System.IO;
 
@@ -22,6 +22,7 @@ namespace minecraft_launcher_v2.Classes
 
             this.onChangedEventHandler = onChangedEventHandler;
             this.onRenamedEventHandler = onRenamedEventHandler;
+            SettingsControl.MainDirectoryChangedEvent += SettingsControl_MainDirectoryChangedEvent;
 
             this.watcher = new FileSystemWatcher();
             watcher.Path = SettingsControl.MainDirectory;
@@ -54,6 +55,13 @@ namespace minecraft_launcher_v2.Classes
             }
         }
 
+
+        private void SettingsControl_MainDirectoryChangedEvent(string newDirectory)
+        {
+            watcher.EnableRaisingEvents = false;
+            watcher.Path = newDirectory;
+            watcher.EnableRaisingEvents = true;
+        }
 
         private void OnChanged(object source, FileSystemEventArgs e)
         {

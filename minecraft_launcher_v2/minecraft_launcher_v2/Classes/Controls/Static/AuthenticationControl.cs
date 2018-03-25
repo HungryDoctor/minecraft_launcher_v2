@@ -7,7 +7,7 @@ using System.Net;
 using System.Security;
 using System.Text;
 
-namespace minecraft_launcher_v2.Classes.Controls
+namespace minecraft_launcher_v2.Classes.Controls.Static
 {
     static class AuthenticationControl
     {

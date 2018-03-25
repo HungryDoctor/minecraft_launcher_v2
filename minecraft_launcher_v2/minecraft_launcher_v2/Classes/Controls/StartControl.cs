@@ -1,27 +1,39 @@
-﻿using minecraft_launcher_v2.ConstantValues;
+﻿using minecraft_launcher_v2.Classes.Abstract;
+using minecraft_launcher_v2.Classes.Controls.Static;
+using minecraft_launcher_v2.ConstantValues;
 using minecraft_launcher_v2.CustomStructs;
 using minecraft_launcher_v2.Serialization;
 using minecraft_launcher_v2.Utilities;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace minecraft_launcher_v2.Classes.Controls
 {
-    static class StartControl
+    class StartControl : Downloadable
     {
-        private static CancellationTokenSource cts;
+        private StartControl()
+        {
+        }
+
+        public static StartControl GetInstance()
+        {
+            if (instance == null)
+            {
+                instance = new StartControl();
+            }
+
+            return (StartControl)instance;
+        }
 
 
 
-        private static List<KeyValuePair<KeyValuePair<string, string>, string>> GetLibrariesPath(RootGameVersion versionJson, ConcurrentQueue<DownloadFileInfo> queueLibraries)
+        private List<KeyValuePair<KeyValuePair<string, string>, string>> GetLibrariesPath(RootGameVersion versionJson)
         {
             List<KeyValuePair<KeyValuePair<string, string>, string>> libraries = new List<KeyValuePair<KeyValuePair<string, string>, string>>(50);
             KeyValuePair<string, string> libraryInfo;
@@ -90,7 +102,7 @@ namespace minecraft_launcher_v2.Classes.Controls
 
                             filePaths = new HashSet<string>();
                             filePaths.Add(libraryPath);
-                            queueLibraries.Enqueue(new DownloadFileInfo(filePaths, url, 0));
+                            downloadQueue.Enqueue(new DownloadFileInfo(filePaths, url, 0));
                         }
                     }
                 }
@@ -98,13 +110,13 @@ namespace minecraft_launcher_v2.Classes.Controls
             catch (Exception ex)
             {
                 MessageBox.Show(Messages.ERROR_GET_LIBRARIES + ex.Message, Messages.CAPTION_COMMON);
-                cts.Cancel();
+                cancellationTokenSource.Cancel();
             }
 
             return libraries;
         }
 
-        private static string GetLibraryPath(Serialization.FileInfo fileInfo, string libaryName)
+        private string GetLibraryPath(Serialization.FileInfo fileInfo, string libaryName)
         {
             if (fileInfo == null || string.IsNullOrWhiteSpace(fileInfo.path))
             {
@@ -116,7 +128,7 @@ namespace minecraft_launcher_v2.Classes.Controls
             }
         }
 
-        private static ExtractionResult ExtractNatives(RootGameVersion versionJson, string extractionPath)
+        private ExtractionResult ExtractNatives(RootGameVersion versionJson, string extractionPath)
         {
             ExtractionResult result = ExtractionResult.NothingToExtract;
             bool skipLibrary = false;
@@ -233,69 +245,11 @@ namespace minecraft_launcher_v2.Classes.Controls
             return result;
         }
 
-        private static void DownloadFilesFromQueue(ParallelOptions parallelOptions, ConcurrentQueue<DownloadFileInfo> queue)
+
+        public string GetStartString(string version)
         {
-            Parallel.ForEach(new InfinitePartitioner(), parallelOptions, (ignored, loopState) =>
-            {
-                if (!cts.IsCancellationRequested)
-                {
-                    DownloadFileInfo downloadFileInfo;
-                    bool dequeued = queue.TryDequeue(out downloadFileInfo);
+            ResetTempVariables();
 
-                    if (dequeued)
-                    {
-                        DownloadFile(downloadFileInfo);
-                    }
-                }
-                else
-                {
-                    loopState.Stop();
-                    cts.Cancel();
-                }
-            });
-        }
-
-        private static void DownloadFile(DownloadFileInfo downloadInfo)
-        {
-            string mainFilePath = "";
-            string filePath = "";
-            mainFilePath = downloadInfo.FilePaths.First();
-            downloadInfo.FilePaths.Remove(mainFilePath);
-
-            try
-            {
-                DownloadUtils.DownloadFile(downloadInfo.FileUrl, mainFilePath);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(Messages.ERROR_GET_LIBRARIES + ex.Message, Messages.CAPTION_COMMON);
-
-                cts.Cancel();
-                cts.Token.ThrowIfCancellationRequested();
-            }
-
-            if (File.Exists(mainFilePath))
-            {
-                for (int x = 1; x < downloadInfo.FilePaths.Count; x++)
-                {
-                    mainFilePath = downloadInfo.FilePaths.First();
-                    downloadInfo.FilePaths.Remove(mainFilePath);
-
-                    string directory = filePath.Substring(0, filePath.LastIndexOf("\\"));
-
-                    if (!Directory.Exists(directory))
-                    {
-                        Directory.CreateDirectory(directory);
-                    }
-
-                    File.Copy(mainFilePath, filePath, true);
-                }
-            }
-        }
-
-
-        public static string GetStartString(string version)
-        {
             StringBuilder startParams = new StringBuilder(5000);
             List<KeyValuePair<KeyValuePair<string, string>, string>> libraries = new List<KeyValuePair<KeyValuePair<string, string>, string>>(50);
             List<KeyValuePair<KeyValuePair<string, string>, string>> tempInfo;
@@ -309,27 +263,18 @@ namespace minecraft_launcher_v2.Classes.Controls
             ExtractionResult extrResult;
             string mainDir = SettingsControl.MainDirectory;
 
-            RootGameVersion versionJson = null;
-            ConcurrentQueue<DownloadFileInfo> queueLibraries = new ConcurrentQueue<DownloadFileInfo>();
-
-            CancellationToken cToken = new CancellationToken();
-            cts = CancellationTokenSource.CreateLinkedTokenSource(cToken);
-
-            ParallelOptions parallelOptions = new ParallelOptions();
-            parallelOptions.CancellationToken = cToken;
 
             var coresCount = Environment.ProcessorCount;
             if (coresCount == 1 || coresCount == 2)
             {
-                parallelOptions.MaxDegreeOfParallelism = 1;
+                StartDownloadFilesFromQueue(1);
             }
             else
             {
-                parallelOptions.MaxDegreeOfParallelism = coresCount - 1;
+                StartDownloadFilesFromQueue(coresCount - 1);
             }
 
-            Task downloadLibraries = Task.Factory.StartNew((new Action(() => DownloadFilesFromQueue(parallelOptions, queueLibraries))), cToken);
-
+            RootGameVersion versionJson = null;
             do
             {
                 try
@@ -347,7 +292,7 @@ namespace minecraft_launcher_v2.Classes.Controls
                     return "";
                 }
 
-                foreach (var item in GetLibrariesPath(versionJson, queueLibraries))
+                foreach (var item in GetLibrariesPath(versionJson))
                 {
                     libraries.Add(new KeyValuePair<KeyValuePair<string, string>, string>(item.Key, item.Value));
                 }
@@ -384,17 +329,14 @@ namespace minecraft_launcher_v2.Classes.Controls
 
             } while (true);
 
-
-            while (queueLibraries.Count != 0)
+            downloadQueue.Enqueue(null);
+            if (!WaitCurrentDownloadTasks(-1))
             {
-                Thread.Sleep(25);
-                if (cts.IsCancellationRequested)
-                {
-                    return "";
-                }
-            }
+                ResetTempVariables();
 
-            cts.Cancel();
+                return "";
+            }
+            ResetTempVariables();
 
             libraries = libraries.OrderBy(x => x.Key.Key).ThenBy(x => x.Key.Value).ToList();
             for (int x = libraries.Count() - 1; x >= 0; x--)
@@ -454,20 +396,9 @@ namespace minecraft_launcher_v2.Classes.Controls
                 startParams.Replace("${assets_root}", quote + mainDir + "\\assets\"");
             }
 
-            startParams.Replace(" --versionType ${version_type}", "");
-
-            cts = null;
+            startParams.Replace(" --versionType ${version_type}", "");          
 
             return startParams.ToString();
-        }
-
-
-        public static void StopAllDownloads()
-        {
-            if (cts != null)
-            {
-                cts.Cancel();
-            }
         }
 
     }

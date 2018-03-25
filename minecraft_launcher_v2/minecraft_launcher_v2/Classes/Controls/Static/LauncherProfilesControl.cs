@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 
-namespace minecraft_launcher_v2.Classes.Controls
+namespace minecraft_launcher_v2.Classes.Controls.Static
 {
     static class LauncherProfilesControl
     {

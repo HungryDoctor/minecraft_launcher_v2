@@ -1,4 +1,6 @@
-﻿using minecraft_launcher_v2.ConstantValues;
+﻿using minecraft_launcher_v2.Classes.Abstract;
+using minecraft_launcher_v2.Classes.Controls.Static;
+using minecraft_launcher_v2.ConstantValues;
 using minecraft_launcher_v2.CustomStructs;
 using minecraft_launcher_v2.Serialization;
 using minecraft_launcher_v2.Utilities;
@@ -14,72 +16,53 @@ using System.Windows;
 
 namespace minecraft_launcher_v2.Classes.Controls
 {
-    static class DownloadControl
+    class DownloadControl : Downloadable
     {
-        private static string downloadVersion;
-        private static ulong totalBytesToDownload;
-        private static ulong totalBytesDownloaded;
+        private DownloadControl()
+        {                
+        }
 
-        private static CancellationTokenSource cts;
-        private static volatile byte counter;
-        private static volatile string errorMessages;
-
-
-        public static double PercentDownloaded
+        public static DownloadControl GetInstance()
         {
-            get
+            if (instance == null)
             {
-                if (totalBytesToDownload == 0)
-                {
-                    return 0;
-                }
-
-                return totalBytesDownloaded / (double)totalBytesToDownload;
+                instance = new DownloadControl();
             }
+
+            return (DownloadControl)instance;
         }
 
 
 
-        static DownloadControl()
-        {
-            downloadVersion = "";
-            errorMessages = "";
-
-            totalBytesToDownload = 0;
-            totalBytesDownloaded = 0;
-        }
-
-
-
-        private static void GetMainFilesUrls(RootGameVersion versionJsnon, string jsnonUrl, ConcurrentQueue<DownloadFileInfo> queueMainFiles)
+        private void GetMainFilesUrls(RootGameVersion versionJsnon, string jsnonUrl)
         {
             HashSet<string> filePaths = null;
             string downloadPath = SettingsControl.MainDirectory + "\\versions\\" + downloadVersion + "\\";
 
             filePaths = new HashSet<string>();
             filePaths.Add(downloadPath + downloadVersion + ".json");
-            queueMainFiles.Enqueue(new DownloadFileInfo(filePaths, jsnonUrl, 0));
+            downloadQueue.Enqueue(new DownloadFileInfo(filePaths, jsnonUrl, 0));
 
             filePaths = new HashSet<string>();
             filePaths.Add(downloadPath + downloadVersion + ".jar");
-            queueMainFiles.Enqueue(new DownloadFileInfo(filePaths, versionJsnon.downloads.client.url, versionJsnon.downloads.client.size));
+            downloadQueue.Enqueue(new DownloadFileInfo(filePaths, versionJsnon.downloads.client.url, versionJsnon.downloads.client.size));
 
 
             if (versionJsnon.downloads.server != null && !string.IsNullOrEmpty(versionJsnon.downloads.server.url))
             {
                 filePaths = new HashSet<string>();
                 filePaths.Add(downloadPath + "minecraft_server." + downloadVersion + ".jar");
-                queueMainFiles.Enqueue(new DownloadFileInfo(filePaths, versionJsnon.downloads.server.url, versionJsnon.downloads.server.size));
+                downloadQueue.Enqueue(new DownloadFileInfo(filePaths, versionJsnon.downloads.server.url, versionJsnon.downloads.server.size));
             }
             if (versionJsnon.downloads.windows_server != null && !string.IsNullOrEmpty(versionJsnon.downloads.windows_server.url))
             {
                 filePaths = new HashSet<string>();
                 filePaths.Add(downloadPath + "minecraft_server." + downloadVersion + ".exe");
-                queueMainFiles.Enqueue(new DownloadFileInfo(filePaths, versionJsnon.downloads.windows_server.url, versionJsnon.downloads.windows_server.size));
+                downloadQueue.Enqueue(new DownloadFileInfo(filePaths, versionJsnon.downloads.windows_server.url, versionJsnon.downloads.windows_server.size));
             }
         }
 
-        private static void GetLibrariesUrls(RootGameVersion versionJsnon, ConcurrentQueue<DownloadFileInfo> queueLibraries)
+        private void GetLibrariesUrls(RootGameVersion versionJsnon)
         {
             bool skipLibrary = false;
             HashSet<string> filePaths = null;
@@ -116,7 +99,7 @@ namespace minecraft_launcher_v2.Classes.Controls
                 {
                     filePaths = new HashSet<string>();
                     filePaths.Add(libariesPath + librariesList[x].downloads.artifact.path.Replace("/", "\\"));
-                    queueLibraries.Enqueue(new DownloadFileInfo(filePaths, librariesList[x].downloads.artifact.url, librariesList[x].downloads.artifact.size));
+                    downloadQueue.Enqueue(new DownloadFileInfo(filePaths, librariesList[x].downloads.artifact.url, librariesList[x].downloads.artifact.size));
                 }
 
                 if (librariesList[x].downloads.classifiers != null)
@@ -127,7 +110,7 @@ namespace minecraft_launcher_v2.Classes.Controls
                         {
                             filePaths = new HashSet<string>();
                             filePaths.Add(libariesPath + classifier.Value.path.Replace("/", "\\"));
-                            queueLibraries.Enqueue(new DownloadFileInfo(filePaths, classifier.Value.url, classifier.Value.size));
+                            downloadQueue.Enqueue(new DownloadFileInfo(filePaths, classifier.Value.url, classifier.Value.size));
                         }
                     }
                 }
@@ -136,7 +119,7 @@ namespace minecraft_launcher_v2.Classes.Controls
             }
         }
 
-        private static void GetAssetsUrls(RootGameVersion versionJsnon, ConcurrentQueue<DownloadFileInfo> queueAssets)
+        private void GetAssetsUrls(RootGameVersion versionJsnon)
         {
             HashSet<string> savePaths = null;
             string content = "";
@@ -169,7 +152,7 @@ namespace minecraft_launcher_v2.Classes.Controls
             {
                 savePaths.Add(mainDir + "\\assets\\indexes\\" + versionJsnon.assets + ".json");
             }
-            queueAssets.Enqueue(new DownloadFileInfo(savePaths, versionJsnon.assetIndex.url, versionJsnon.assetIndex.size));
+            downloadQueue.Enqueue(new DownloadFileInfo(savePaths, versionJsnon.assetIndex.url, versionJsnon.assetIndex.size));
 
 
             if (versionJsnon.assets == "legacy")
@@ -203,11 +186,11 @@ namespace minecraft_launcher_v2.Classes.Controls
 
                 x = assetsInfo.Count - 1;
 
-                queueAssets.Enqueue(new DownloadFileInfo(savePaths, assetUrl, totalBytesToDownload));
+                downloadQueue.Enqueue(new DownloadFileInfo(savePaths, assetUrl, totalBytesToDownload));
             }
         }
 
-        private static string GetAssetSavePath(KeyValuePair<string, AssetObject> assetInfo, string assetIndex, string assetsDirPath)
+        private string GetAssetSavePath(KeyValuePair<string, AssetObject> assetInfo, string assetIndex, string assetsDirPath)
         {
             if (assetIndex == "legacy")
             {
@@ -226,191 +209,10 @@ namespace minecraft_launcher_v2.Classes.Controls
         }
 
 
-        private static void DownloadFilesFromQueue(ParallelOptions parallelOptions, ConcurrentQueue<DownloadFileInfo> queue, Task task)
+        public bool DownloadVersion(string newDownloadVersion)
         {
-            Parallel.ForEach(new InfinitePartitioner(), parallelOptions, (ignored, loopState) =>
-            {
-                if (!cts.IsCancellationRequested)
-                {
-                    DownloadFileInfo downloadFileInfo;
-                    bool dequeued = queue.TryDequeue(out downloadFileInfo);
-
-                    if (dequeued)
-                    {
-                        DownloadFile(downloadFileInfo);
-                    }
-                    else if (!dequeued && task.IsCompleted)
-                    {
-                        loopState.Stop();
-                    }
-                }
-
-                if (task.IsFaulted || task.IsCanceled || cts.IsCancellationRequested)
-                {
-                    loopState.Stop();
-                    cts.Cancel();
-                }
-            });
-        }
-
-        private static void DownloadFile(DownloadFileInfo downloadInfo)
-        {
-            string mainFilePath = "";
-            string filePath = "";
-            mainFilePath = downloadInfo.FilePaths.First();
-            downloadInfo.FilePaths.Remove(mainFilePath);
-
-            try
-            {
-                DownloadUtils.DownloadFile(downloadInfo.FileUrl, mainFilePath);
-                totalBytesDownloaded += downloadInfo.FileSize;
-            }
-            catch (Exception ex)
-            {
-                if (!errorMessages.Contains(ex.Message))
-                {
-                    errorMessages += ex.Message + "\n";
-                }
-
-                cts.Cancel();
-                cts.Token.ThrowIfCancellationRequested();
-            }
-
-            try
-            {
-                if (File.Exists(mainFilePath))
-                {
-                    for (int x = 0; x < downloadInfo.FilePaths.Count; x++)
-                    {
-                        filePath = downloadInfo.FilePaths.First();
-                        downloadInfo.FilePaths.Remove(filePath);
-
-                        string directory = filePath.Substring(0, filePath.LastIndexOf("\\"));
-
-                        if (!Directory.Exists(directory))
-                        {
-                            Directory.CreateDirectory(directory);
-                        }
-
-                        File.Copy(mainFilePath, filePath, true);
-                        totalBytesDownloaded += downloadInfo.FileSize;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                if (!errorMessages.Contains(ex.Message))
-                {
-                    errorMessages += ex.Message + "\n";
-                }
-
-                cts.Cancel();
-                cts.Token.ThrowIfCancellationRequested();
-            }
-
-            counter++;
-            ClearMemory();
-        }
-
-        private static void GetTotalBytesToDownload(RootGameVersion versionJsnon)
-        {
-            totalBytesToDownload = 0;
-
-            if (versionJsnon.downloads.client != null && string.IsNullOrWhiteSpace(versionJsnon.downloads.client.url)
-                && versionJsnon.downloads.client.size > 0)
-            {
-                totalBytesToDownload += versionJsnon.downloads.client.size;
-            }
-
-            if (versionJsnon.downloads.server != null && string.IsNullOrWhiteSpace(versionJsnon.downloads.server.url)
-                && versionJsnon.downloads.server.size > 0)
-            {
-                totalBytesToDownload += versionJsnon.downloads.server.size;
-            }
-
-            if (versionJsnon.downloads.windows_server != null && string.IsNullOrWhiteSpace(versionJsnon.downloads.windows_server.url)
-                && versionJsnon.downloads.windows_server.size > 0)
-            {
-                totalBytesToDownload += versionJsnon.downloads.windows_server.size;
-            }
-
-
-            if (versionJsnon.assetIndex != null && string.IsNullOrWhiteSpace(versionJsnon.assetIndex.url)
-                && versionJsnon.assetIndex.totalSize > 0)
-            {
-                totalBytesToDownload += versionJsnon.assetIndex.totalSize;
-            }
-
-
-            bool skipLibrary = false;
-            var librariesList = versionJsnon.libraries;
-            if (versionJsnon.libraries != null)
-            {
-                for (int x = librariesList.Count - 1; x >= 0; x--)
-                {
-                    skipLibrary = false;
-
-                    if (librariesList[x].rules != null)
-                    {
-                        foreach (var rule in librariesList[x].rules)
-                        {
-                            if (rule.action != null && rule.action == "allow" && rule.os != null && rule.os.name != "windows")
-                            {
-                                skipLibrary = true;
-                                break;
-                            }
-                            else if (rule.action != null && rule.action == "disallow" && rule.os != null && rule.os.name == "windows")
-                            {
-                                skipLibrary = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (skipLibrary)
-                    {
-                        continue;
-                    }
-
-                    if (librariesList[x].downloads.artifact != null && librariesList[x].downloads.artifact.size > 0)
-                    {
-                        totalBytesToDownload += librariesList[x].downloads.artifact.size;
-                    }
-
-                    if (librariesList[x].downloads.classifiers != null)
-                    {
-                        foreach (var classifier in librariesList[x].downloads.classifiers)
-                        {
-                            if (classifier.Key.Contains("natives-windows"))
-                            {
-                                if (Constants.IS_64_BIT && classifier.Key == "natives-windows-64" && classifier.Value.size > 0)
-                                {
-                                    totalBytesToDownload += classifier.Value.size;
-                                }
-                                else if (!Constants.IS_64_BIT && classifier.Key == "natives-windows-32" && classifier.Value.size > 0)
-                                {
-                                    totalBytesToDownload += classifier.Value.size;
-                                }
-                                else if (classifier.Value.size > 0)
-                                {
-                                    totalBytesToDownload += classifier.Value.size;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            totalBytesToDownload *= 8;
-        }
-
-
-
-        public static bool DownloadVersion(string newDownloadVersion)
-        {
+            ResetTempVariables();
             downloadVersion = newDownloadVersion;
-            counter = 0;
-            totalBytesToDownload = 0;
-            totalBytesDownloaded = 0;
 
             string content = "";
             bool downloaded = false;
@@ -476,81 +278,29 @@ namespace minecraft_launcher_v2.Classes.Controls
             }
 
 
-            CancellationToken cToken = new CancellationToken();
-            cts = CancellationTokenSource.CreateLinkedTokenSource(cToken);
+            SetTotalBytesToDownload(versionJsnon);
+            StartDownloadFilesFromQueue(Environment.ProcessorCount);
 
-            ParallelOptions parallelOptions = new ParallelOptions();
-            parallelOptions.CancellationToken = cToken;
-            parallelOptions.MaxDegreeOfParallelism = Environment.ProcessorCount;
-
-            GetTotalBytesToDownload(versionJsnon);
-
-
-            ConcurrentQueue<DownloadFileInfo> queueMainFiles = new ConcurrentQueue<DownloadFileInfo>();
-            ConcurrentQueue<DownloadFileInfo> queueLibraries = new ConcurrentQueue<DownloadFileInfo>();
-            ConcurrentQueue<DownloadFileInfo> queueAssets = new ConcurrentQueue<DownloadFileInfo>();
-
-            Task getAssetsUrls = Task.Factory.StartNew(new Action(() => GetAssetsUrls(versionJsnon, queueAssets)), cToken);
-            Task downloadAssets = Task.Factory.StartNew(new Action(() => DownloadFilesFromQueue(parallelOptions, queueAssets, getAssetsUrls)), cToken);
-
-            Task getLibrariesUrls = Task.Factory.StartNew(new Action(() => GetLibrariesUrls(versionJsnon, queueLibraries)), cToken);
-            Task downloadLibraries = Task.Factory.StartNew(new Action(() => DownloadFilesFromQueue(parallelOptions, queueLibraries, getLibrariesUrls)), cToken);
-
-            Task getMainFilesUrls = Task.Factory.StartNew(new Action(() => GetMainFilesUrls(versionJsnon, versionManifest.url, queueMainFiles)), cToken);
-            Task downloadMainFiles = Task.Factory.StartNew(new Action(() => DownloadFilesFromQueue(parallelOptions, queueMainFiles, getMainFilesUrls)), cToken);
-
-            Task[] tasks = new Task[] { getAssetsUrls, downloadAssets, getLibrariesUrls, downloadLibraries, getMainFilesUrls, downloadMainFiles };
-            try
+            Task getAssetsUrls = Task.Factory.StartNew(new Action(() => GetAssetsUrls(versionJsnon)), cancellationTokenSource.Token);
+            Task getLibrariesUrls = Task.Factory.StartNew(new Action(() => GetLibrariesUrls(versionJsnon)), cancellationTokenSource.Token);
+            Task getMainFilesUrls = Task.Factory.StartNew(new Action(() => GetMainFilesUrls(versionJsnon, versionManifest.url)), cancellationTokenSource.Token);
+            
+            if (WaitTasks(new Task[] { getAssetsUrls, getLibrariesUrls, getMainFilesUrls }, -1))
             {
-                downloaded = WaitAllTasks(tasks, -1, cts);
-            }
-            catch
-            {
-                MessageBox.Show(Messages.ERROR_GET_FILES + errorMessages, Messages.CAPTION_COMMON);
+                downloadQueue.Enqueue(null);
+
+                if (WaitCurrentDownloadTasks(-1))
+                {
+                    downloaded = true;
+                }
             }
 
-            downloadVersion = "";
-            errorMessages = "";
-            totalBytesToDownload = 0;
-            totalBytesDownloaded = 0;
-            cts = null;
-
+            ResetTempVariables();
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 
             return downloaded;
         }
 
-        private static bool WaitAllTasks(Task[] tasks, int timeout, CancellationTokenSource cts)
-        {
-            foreach (var task in tasks)
-            {
-                task.ContinueWith(t =>
-                {
-                    if (t.IsFaulted || t.IsCanceled) cts.Cancel();
-                },
-                cts.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
-            }
-
-            return Task.WaitAll(tasks, timeout, cts.Token);
-        }
-
-
-        public static void StopAllDownloads()
-        {
-            if (cts != null)
-            {
-                cts.Cancel();
-            }
-        }
-
-        private static void ClearMemory()
-        {
-            if (counter >= Constants.MEMORY_CLEAR_THREHOLD)
-            {
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
-                counter = 0;
-            }
-        }
-
+       
     }
 }

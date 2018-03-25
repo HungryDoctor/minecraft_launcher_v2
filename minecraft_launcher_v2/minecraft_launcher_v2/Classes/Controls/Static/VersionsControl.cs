@@ -1,4 +1,5 @@
-﻿using minecraft_launcher_v2.ConstantValues;
+﻿using minecraft_launcher_v2.Classes.Controls.Static;
+using minecraft_launcher_v2.ConstantValues;
 using minecraft_launcher_v2.Serialization;
 using minecraft_launcher_v2.Utilities;
 using Newtonsoft.Json;
@@ -30,7 +31,6 @@ namespace minecraft_launcher_v2.Classes.Controls
                             installedVersions.Add(folderName);
                         }
                     }
-                    installedVersions.Capacity = installedVersions.Count;
 
                     return installedVersions;
                 }
@@ -40,7 +40,6 @@ namespace minecraft_launcher_v2.Classes.Controls
 
                     if (installedVersions != null && installedVersions.Count > 0)
                     {
-                        installedVersions.Capacity = installedVersions.Count;
                         return installedVersions;
                     }
                     else
@@ -108,7 +107,7 @@ namespace minecraft_launcher_v2.Classes.Controls
             }
         }
 
-        public static void WriteVersionsManifest(string output)
+        private static void WriteVersionsManifest(string output)
         {
             using (FileStream fileStream = new FileStream(SettingsControl.MainDirectory + "\\version_manifest.json", FileMode.Create, FileAccess.Write, FileShare.None))
             {
@@ -118,6 +117,7 @@ namespace minecraft_launcher_v2.Classes.Controls
                 }
             }
         }
+
 
         public static List<ManifestVersion> GetAvailableVersions()
         {
@@ -162,8 +162,6 @@ namespace minecraft_launcher_v2.Classes.Controls
 
             if (allVersions != null)
             {
-                allVersions.Capacity = allVersions.Count;
-
                 allVersions.Reverse();
 
                 return allVersions;

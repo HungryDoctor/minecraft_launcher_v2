@@ -10,10 +10,13 @@ using System.Windows;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace minecraft_launcher_v2.Classes.Controls
+namespace minecraft_launcher_v2.Classes.Controls.Static
 {
     static class SettingsControl
     {
+        public static event Action<string> MainDirectoryChangedEvent;
+
+
         #region Global Settings Properties
 
         public static string MainDirectory
@@ -25,6 +28,11 @@ namespace minecraft_launcher_v2.Classes.Controls
             set
             {
                 GlobalSettings.MainDirectory = value;
+
+                if (MainDirectoryChangedEvent != null)
+                {
+                    MainDirectoryChangedEvent.Invoke(value);
+                }
             }
         }
         public static DateTime RemindUpdateNotificationDate

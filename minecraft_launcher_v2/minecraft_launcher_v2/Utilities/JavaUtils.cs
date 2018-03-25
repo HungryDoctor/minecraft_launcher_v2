@@ -141,9 +141,9 @@ namespace minecraft_launcher_v2.Utilities
             }
         }
 
-        public static bool CanUse64BitJava()
+        public static bool CanUse64BitJava(string javaDirectory)
         {
-            return (Constants.IS_64_BIT && CheckJavaBitDebth(LauncherProfilesControl.JavaDirectory) == BitDepth.x64);
+            return (Constants.IS_64_BIT && CheckJavaBitDebth(javaDirectory) == BitDepth.x64);
         }
 
     }

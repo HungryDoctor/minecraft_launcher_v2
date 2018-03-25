@@ -241,8 +241,6 @@ namespace minecraft_launcher_v2.Utilities
                 result.Add(Process.GetProcessById(Convert.ToInt32(item.GetPropertyValue("ProcessId"))));
             }
 
-            result.Capacity = result.Count;
-
             return result;
         }
 

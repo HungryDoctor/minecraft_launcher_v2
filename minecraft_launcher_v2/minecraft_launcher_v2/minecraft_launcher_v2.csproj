@@ -63,7 +63,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.11.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -89,14 +89,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Classes\Abstract\Downloadable.cs" />
     <Compile Include="ConstantValues\Constants.cs" />
     <Compile Include="ConstantValues\Singlet.cs" />
-    <Compile Include="Classes\Controls\AuthenticationControl.cs" />
+    <Compile Include="Classes\Controls\Static\AuthenticationControl.cs" />
     <Compile Include="Classes\Controls\DownloadControl.cs" />
-    <Compile Include="Classes\Controls\LauncherProfilesControl.cs" />
-    <Compile Include="Classes\Controls\SettingsControl.cs" />
+    <Compile Include="Classes\Controls\Static\LauncherProfilesControl.cs" />
+    <Compile Include="Classes\Controls\Static\SettingsControl.cs" />
     <Compile Include="Classes\Controls\StartControl.cs" />
-    <Compile Include="Classes\Controls\VersionsControl.cs" />
+    <Compile Include="Classes\Controls\Static\VersionsControl.cs" />
     <Compile Include="Classes\MainFolderWatcher.cs" />
     <Compile Include="Model\ModelMain.cs" />
     <Compile Include="Serialization\Assets.cs" />
@@ -112,7 +113,6 @@
     <Compile Include="Utilities\Extensions.cs" />
     <Compile Include="Utilities\JavaUtils.cs" />
     <Compile Include="Utilities\TaskbarUtils.cs" />
-    <Compile Include="View\ViewMain.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -130,7 +130,6 @@
     <Compile Include="CustomStructs\EnumBitDepth.cs" />
     <Compile Include="CustomStructs\EnumExtractionResult.cs" />
     <Compile Include="CustomStructs\EnumMachineType.cs" />
-    <Compile Include="CustomStructs\InfinitePartitioner.cs" />
     <Compile Include="CustomStructs\TaskbarSiteItem.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
@@ -173,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="CustomControls\" />
+    <Folder Include="View\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\MainIcon.ico" />

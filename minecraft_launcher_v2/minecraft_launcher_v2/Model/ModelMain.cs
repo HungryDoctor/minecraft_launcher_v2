@@ -1,12 +1,17 @@
 ﻿using Microsoft.WindowsAPICodePack.Taskbar;
 using minecraft_launcher_v2.Classes.Controls;
+using minecraft_launcher_v2.Classes.Controls.Static;
 using minecraft_launcher_v2.ConstantValues;
 using minecraft_launcher_v2.CustomStructs;
+using minecraft_launcher_v2.Serialization;
 using minecraft_launcher_v2.Utilities;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Security;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -14,6 +19,234 @@ namespace minecraft_launcher_v2.Model
 {
     class ModelMain
     {
+        #region Authentication Control
+
+        internal AuthenticationResult AuthenticationLogIn(SecureString password)
+        {
+            string response = AuthenticationControl.Authenticate(LauncherProfilesControl.Username, password);
+
+            AuthenticationResult authenticationResult = CheckForErrors(response);
+
+            if (authenticationResult == AuthenticationResult.Success)
+            {
+                RootAuthenticationResponse responseJson = null;
+
+                try
+                {
+                    responseJson = JsonConvert.DeserializeObject<RootAuthenticationResponse>(response);
+                }
+                catch
+                { }
+
+                if (responseJson != null && responseJson.selectedProfile != null && !string.IsNullOrWhiteSpace(responseJson.accessToken) &&
+                    !string.IsNullOrWhiteSpace(responseJson.clientToken) && !string.IsNullOrWhiteSpace(responseJson.selectedProfile.name))
+                {
+                    LauncherProfilesControl.DisplayName = responseJson.selectedProfile.name;
+                    LauncherProfilesControl.UserId = responseJson.selectedProfile.id;
+                    LauncherProfilesControl.ClientToken = responseJson.clientToken;
+                    LauncherProfilesControl.AccessToken = responseJson.accessToken;
+                    LauncherProfilesControl.UUID = responseJson.clientToken;
+                }
+                else
+                {
+                    authenticationResult = AuthenticationResult.UnknownError;
+                }
+            }
+
+            return authenticationResult;
+        }
+
+        internal AuthenticationResult AuthenticationRefresh()
+        {
+            string response = AuthenticationControl.Refresh(LauncherProfilesControl.AccessToken, LauncherProfilesControl.ClientToken, "", "");
+
+            AuthenticationResult authenticationResult = CheckForErrors(response);
+
+            if (authenticationResult == AuthenticationResult.Success)
+            {
+                RootRefreshRequestResponse responseJson = null;
+
+                try
+                {
+                    responseJson = JsonConvert.DeserializeObject<RootRefreshRequestResponse>(response);
+                }
+                catch
+                { }
+
+                if (responseJson != null && responseJson.selectedProfile != null && !string.IsNullOrWhiteSpace(responseJson.accessToken) &&
+                    !string.IsNullOrWhiteSpace(responseJson.clientToken) && !string.IsNullOrWhiteSpace(responseJson.selectedProfile.name))
+                {
+                    LauncherProfilesControl.DisplayName = responseJson.selectedProfile.name;
+                    LauncherProfilesControl.UserId = responseJson.selectedProfile.id;
+                    LauncherProfilesControl.ClientToken = responseJson.clientToken;
+                    LauncherProfilesControl.AccessToken = responseJson.accessToken;
+                    LauncherProfilesControl.UUID = responseJson.clientToken;
+                }
+                else
+                {
+                    authenticationResult = AuthenticationResult.UnknownError;
+                }
+            }
+
+            return authenticationResult;
+        }
+
+        internal AuthenticationResult AuthenticationSignOut(SecureString password)
+        {
+            string response = AuthenticationControl.SignOut(LauncherProfilesControl.Username, password);
+
+            AuthenticationResult authenticationResult = CheckForErrors(response);
+
+            if (response == "empty_response")
+            {
+                authenticationResult = AuthenticationResult.Success;
+            }
+
+            return AuthenticationResult.Success;
+        }
+
+        internal AuthenticationResult AuthenticationValidateSession()
+        {
+            string response = AuthenticationControl.Validate(LauncherProfilesControl.AccessToken, LauncherProfilesControl.ClientToken);
+
+            AuthenticationResult authenticationResult = CheckForErrors(response);
+
+            if (response == "empty_response")
+            {
+                authenticationResult = AuthenticationResult.Success;
+            }
+
+            return AuthenticationResult.Success;
+        }
+
+        internal AuthenticationResult AuthenticationInvalidateSession()
+        {
+            string response = AuthenticationControl.Invalidate(LauncherProfilesControl.AccessToken, LauncherProfilesControl.ClientToken);
+
+            AuthenticationResult authenticationResult = CheckForErrors(response);
+
+            if (response == "empty_response")
+            {
+                authenticationResult = AuthenticationResult.Success;
+            }
+
+            return AuthenticationResult.Success;
+        }
+
+        internal bool TokensPresent()
+        {
+            return !string.IsNullOrWhiteSpace(LauncherProfilesControl.AccessToken) && !string.IsNullOrWhiteSpace(LauncherProfilesControl.ClientToken);
+        }
+
+
+        private AuthenticationResult CheckForErrors(string responseString)
+        {
+            AuthenticationResult authenticationResult = AuthenticationResult.Success;
+
+            if (string.IsNullOrWhiteSpace(responseString))
+            {
+                authenticationResult = AuthenticationResult.UnknownError;
+            }
+            else
+            {
+                RootError errorJson = null;
+
+                try
+                {
+                    errorJson = JsonConvert.DeserializeObject<RootError>(responseString);
+                }
+                catch
+                {
+                    authenticationResult = AuthenticationResult.UnknownError;
+                }
+
+                if (errorJson != null && errorJson.error != null)
+                {
+                    switch (errorJson.error)
+                    {
+                        case "Not Found":
+                            {
+                                authenticationResult = AuthenticationResult.NotFound;
+                                break;
+                            }
+                        case "Method Not Allowed":
+                            {
+                                authenticationResult = AuthenticationResult.MethodNotAllowed;
+                                break;
+                            }
+                        case "ForbiddenOperationException":
+                            {
+                                if (errorJson.errorMessage == "Invalid credentials. Account migrated, use e-mail as username.")
+                                {
+                                    authenticationResult = AuthenticationResult.InvalidCredentialsMigrated;
+                                }
+                                else if (errorJson.errorMessage == "Invalid credentials. Invalid username or password.")
+                                {
+                                    authenticationResult = AuthenticationResult.InvalidCredentials;
+                                }
+                                else if (errorJson.errorMessage == "Invalid credentials.")
+                                {
+                                    authenticationResult = AuthenticationResult.InvalidCredentials;
+                                }
+                                break;
+                            }
+                        case "IllegalArgumentException":
+                            {
+                                if (errorJson.errorMessage == "Access token already has a profile assigned.")
+                                {
+                                    authenticationResult = AuthenticationResult.AccessTokenHasProfile;
+                                }
+                                else if (errorJson.errorMessage == "credentials is null")
+                                {
+                                    authenticationResult = AuthenticationResult.CredentialsIsNull;
+                                }
+                                break;
+                            }
+                        case "Unsupported Media Type":
+                            {
+                                authenticationResult = AuthenticationResult.UnsupportedMediaType;
+                                break;
+                            }
+                        default:
+                            {
+                                authenticationResult = AuthenticationResult.UnknownError;
+                                break;
+                            }
+                    }
+                }
+            }
+
+            return authenticationResult;
+        }
+
+        #endregion
+
+
+        #region Versions Control
+
+        public Task<List<ManifestVersion>> ReloadAvailableVersionsAsync()
+        {
+            return Task.Factory.StartNew(new Func<List<ManifestVersion>>(() => VersionsControl.ReloadAvailableVersions()));
+        }
+
+        public Task<List<ManifestVersion>> GetAvailableVersionsAsync()
+        {
+            return Task.Factory.StartNew(new Func<List<ManifestVersion>>(() => VersionsControl.GetAvailableVersions()));
+        }
+
+        public Task<List<string>> UpdateInstalledVersionsAsync()
+        {
+            return Task.Factory.StartNew(new Func<List<string>>(() =>
+            {
+                List<string> installedVersions = VersionsControl.GetInstalledVersions().OrderByAlphaNumeric(t => t).ToList();
+                SettingsControl.DeleteRestVerionsSettings(installedVersions);
+                return installedVersions;
+            }));
+        }
+
+        #endregion
+
+
         #region Download Control
 
         public void WatchDownloadPercentage(IntPtr windowPointer, Task<bool> downloadTask)
@@ -22,7 +255,7 @@ namespace minecraft_launcher_v2.Model
 
             while (!downloadTask.IsCanceled && !downloadTask.IsCompleted && !downloadTask.IsFaulted)
             {
-                percent = DownloadControl.PercentDownloaded;
+                percent = DownloadControl.GetInstance().PercentDownloaded;
 
                 if (percent < 1 && !downloadTask.IsCompleted)
                 {
@@ -42,7 +275,7 @@ namespace minecraft_launcher_v2.Model
             {
                 if (!string.IsNullOrWhiteSpace(downloadVersion))
                 {
-                    return DownloadControl.DownloadVersion(downloadVersion);
+                    return DownloadControl.GetInstance().DownloadVersion(downloadVersion);
                 }
                 else
                 {
@@ -117,7 +350,7 @@ namespace minecraft_launcher_v2.Model
             char quote = '"';
 
             string use64Bit = "";
-            string javaParameters = StartControl.GetStartString(LauncherProfilesControl.LastVersionId);
+            string javaParameters = StartControl.GetInstance().GetStartString(LauncherProfilesControl.LastVersionId);
 
             uint logNumber = 0;
             string javaLogging = "";
@@ -153,7 +386,7 @@ namespace minecraft_launcher_v2.Model
             javaParameters = javaParameters.Replace("${user_properties}", "{}");
             javaParameters = javaParameters.Replace("${user_type}", quote + "mojang" + quote);
 
-            if (SettingsControl.Use64Bit && JavaUtils.CanUse64BitJava())
+            if (SettingsControl.Use64Bit && JavaUtils.CanUse64BitJava(LauncherProfilesControl.JavaDirectory))
             {
                 use64Bit = " -d64";
             }
@@ -228,7 +461,7 @@ namespace minecraft_launcher_v2.Model
 
         public Task<Process> StartGameAsync()
         {
-            Task<Process> task = new Task<Process>(new Func<Process>(() =>
+            return Task.Factory.StartNew(new Func<Process>(() =>
             {
                 if (AreSettingsOk())
                 {
@@ -239,10 +472,6 @@ namespace minecraft_launcher_v2.Model
                     return null;
                 }
             }));
-
-            task.Start();
-
-            return task;
         }
 
         #endregion
@@ -302,7 +531,7 @@ namespace minecraft_launcher_v2.Model
 
         public Task SetTaskbarJumpListAsync(IntPtr windowPointer, Dictionary<string, List<TaskbarSiteItem>> additionalJumpListItems)
         {
-            Task t = new Task(new Action(() =>
+            return Task.Factory.StartNew(new Action(() =>
             {
                 Dictionary<string, List<TaskbarSiteItem>> jumpListItems = new Dictionary<string, List<TaskbarSiteItem>>();
 
@@ -326,9 +555,6 @@ namespace minecraft_launcher_v2.Model
 
                 TaskbarUtils.SetTaskbarJumpListLink(windowPointer, jumpListItems);
             }));
-            t.Start();
-
-            return t;
         }
 
         #endregion
@@ -336,19 +562,13 @@ namespace minecraft_launcher_v2.Model
 
         public Task<string> CheckForUpdatesAsync()
         {
-            Task<string> t = new Task<string>(new Func<string>(() =>
-            {
-                return CommonUtils.GetLauncherUpdates();
-            }));
-            t.Start();
-
-            return t;
+            return Task.Factory.StartNew(new Func<string>(() => CommonUtils.GetLauncherUpdates()));
         }
 
         private void StopDownloads()
         {
-            DownloadControl.StopAllDownloads();
-            StartControl.StopAllDownloads();
+            DownloadControl.GetInstance().StopAllDownloads();
+            StartControl.GetInstance().StopAllDownloads();
         }
 
     }
